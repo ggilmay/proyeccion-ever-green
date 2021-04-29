@@ -1,0 +1,84 @@
+jobs:
+  install:
+    machine:
+      image: ubuntu-2004:202010-01
+    working_directory: ~/react-chat
+    steps:
+      - checkout
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+      - run:
+          name: Installing dependencies
+          command: npm ci
+      - save_cache:
+          key: dependency-cache-{{ checksum "package.json" }}
+          paths:
+            - ./node_modules
+      - persist_to_workspace:
+          root: ~/react-chat
+          paths:
+            - node_modules
+
+  build:
+    machine:
+      image: ubuntu-2004:202010-01
+    working_directory: ~/react-chat
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/react-chat
+      - run:
+          name: Build application
+          command: npm run build
+      - persist_to_workspace:
+          root: ~/react-chat
+          paths:
+            - build
+
+  test:
+    machine:
+      image: ubuntu-2004:202010-01
+    working_directory: ~/react-chat
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/react-chat
+      - run:
+          name: Test
+          command: npm test
+      - store_artifacts:
+          path: cypress/videos
+      - store_artifacts:
+          path: cypress/screenshots
+
+  deploy:
+    machine:
+      image: ubuntu-2004:202010-01
+    steps:
+      - checkout
+      - run:
+          name: Installing AWS CLI
+          command: |
+            sudo apt-get update
+            sudo apt install python3-pip
+            sudo pip3 install awsebcli --upgrade
+      - run: aws s3 sync build s3://chatbot-lex-bucket
+
+workflows:
+  version: 2
+  execute_bulk:
+    jobs:
+      - install
+      - build:
+          requires:
+            - install
+      - test:
+          requires:
+            - build
+      - hold:
+          type: approval
+          requires:
+           - test
+      - deploy:
+          requires:
+            - hold

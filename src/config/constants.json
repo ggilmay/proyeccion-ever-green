@@ -1,0 +1,16 @@
+{
+  "data": [{
+    "description": "Seleccionar alguno",
+    "id": 0
+  }, {
+    "description": "Produccion de cultivos",
+    "id": 1
+  }],
+  "methods": [{
+    "description": "Seleccionar alguno",
+    "id": 0
+  }, {
+    "description": "Regresion lineal",
+    "id": 1
+  }]
+}
